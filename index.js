@@ -33,7 +33,13 @@ app.post('/mailgun', function (req, res) {
       const attachment = JSON.parse(req.body.attachments);
       console.log("fetching from " + attachment[0].url);
 
-      request({url: 'https://api:' + process.env.MAILGUN_API_KEY + '@' + attachment[0].url}, function (error, response, body) {
+      request({
+        url: attachment[0].url,
+        'auth': {
+          'user': 'api',
+          'pass': process.env.MAILGUN_API_KEY
+        }
+      }, function (error, response, body) {
         console.log(body);
         socket.emit('server-pair-data', {
           csv: body
