@@ -139,6 +139,15 @@
       $('#emailHolder').text(data.email);
     });
 
+    socket.on('server-use-csv', function (data) {
+      toastr.warning('pairr only understands CSV data, please resubmit the PAIR request with CSV instead of HTML.');
+    });
+
+    socket.on('server-pair-data', function (data) {
+      toastr.success('Received data from UBC PAIR.');
+      console.log(data);
+    });
+
    $('#generateEmailLink').click(function () {
         socket.emit('client-req-email');
         $('#generateEmailLink').hide();
