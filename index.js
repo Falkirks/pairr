@@ -20,8 +20,9 @@ app.get('/', function (req, res) {
 });
 
 app.post('/mailgun', function (req, res) {
+  console.dir(req.body);
   if(req.body.sender && req.body.sender === 'do_not_reply@oldadm.ubc.ca'){
-    consolr.log(req.body);
+    console.log(req.body);
   }
   res.end('OK');
 });
