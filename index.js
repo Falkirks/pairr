@@ -12,7 +12,8 @@ server.listen(process.env.PORT || 3000);
 
 app.use( bodyParser.json({limit: '2mb'}) );       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
-  extended: true
+  extended: true,
+  limit: '2mb'
 }));
 
 app.get('/', function (req, res) {
