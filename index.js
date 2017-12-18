@@ -1,16 +1,29 @@
-let TempMailbox = require('rr-guerrillamail');
 let app = require('express')();
 let server = require('http').Server(app);
 let io = require('socket.io')(server);
+let randomstring = require("randomstring");
+let bodyParser = require('body-parser');
 
 let sharedState = {
   serviceOnline: true
 };
 
-server.listen(3000);
+server.listen(process.env.PORT || 3000);
+
+app.use( bodyParser.json() );       // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+  extended: true
+}));
 
 app.get('/', function (req, res) {
   res.sendFile(__dirname + '/index.html');
+});
+
+app.post('/mailgun', function (req, res) {
+  if(req.body.sender && req.body.sender === 'do_not_reply@oldadm.ubc.ca'){
+    consolr.log(req.body);
+  }
+  res.end('OK');
 });
 
 io.on('connection', function (socket) {
@@ -19,21 +32,6 @@ io.on('connection', function (socket) {
     console.log("client connected");
   });
   socket.on('client-req-email', function (data) {
-    let mailbox = new TempMailbox();
-
-    mailbox.getEmailAddress()
-      .then(function(addr) {
-        socket.emit('server-gen-email', { email: addr });
-      })
-      .then(function() {
-        return mailbox.waitForEmail(function(m) {
-          return (m.mail_from === 'do_not_reply@oldadm.ubc.ca');
-        });
-      })
-      .then(function(mail) {
-        console.log(JSON.stringify(mail, null, 2));
-        socket.emit('server-mail', mail);
-        mailbox.deleteMail(mail.mail_id);
-      });
+    socket.emit('server-gen-email', {email: randomstring.generate() + "@pairr.falkirks.com"});
   })
 });
