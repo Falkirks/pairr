@@ -85,36 +85,59 @@
             }
         }
     </style>
+    <script src="https://use.fontawesome.com/a5b0d8c0ea.js"></script>
 </head>
 <body>
 
 <div id="leadBody">
     <h1>pairr</h1>
-    <p>This tool receives a grade distribution from PAIR and generates a pretty graph. You are given an email, send the PAIR results there, and they are processed by pairr.</p>
+    <p>This tool receives a grade distribution from <a href="https://webprd01.pair.ubc.ca/reports/gradesdist_request.action" target="_blank">PAIR</a> and generates more readable statistics. You are given an email, send the PAIR results there, and they are processed by pairr.</p>
 
     <a href="#" id="generateEmailLink">Get an email</a>
     <p id="genText">Generating email...</p>
+
+    <input type="file" id="uploadCsv" name="uploadCsv" />
+
+    <br><br>
+
+    <h3>How it works</h3>
+
+    <p>pairr is a simple Node.js + Express + Socket.IO server with a JQuery based frontend. I use mailgun to handle incoming email processing. Emails are filtered and delivered to a webhook, which routes they to an appropriate client socket.</p>
+
+    <br><br>
+
+    <small>Made with <i class="fa fa-heart" aria-label="Heart"></i> and <i class="fa fa-code" aria-label="Code"></i> by <a href="//falkirks.com">falkirks</a> </small>
+
+
 </div>
 
 <div id="emailGeneratedBody" align="center">
 
-    Waiting for emails sent to...
+    <h3>Waiting for emails sent to...</h3>
 
     <pre id="emailHolder"></pre>
+
+    <small>PAIR can take several minutes to send the results.</small>
 
     <div class="loader">Loading...</div>
 
 </div>
 
-
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.3.6/papaparse.min.js" integrity="sha256-5nI7WwoRuBEpzsi7i4B4FoxptQfKFKKQXWRiLkPaGzA=" crossorigin="anonymous"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
+    let generateCharts = function (csv) {
+        console.log(csv);
+    };
     $('#genText').hide();
     let sharedState = {};
     let socket = io.connect(location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: ''));
     socket.on('server-hello', function (data) {
+        $('#leadBody').show();
+        $('#emailGeneratedBody').hide();
+
         sharedState = data;
 
         if(sharedState.serviceOnline) {
@@ -125,7 +148,29 @@
           toastr.warning('Service unavailable.');
           $('#generateEmailLink').hide();
         }
-        console.log(data);
+
+
+        if(sharedState.enableLocal){
+          $('#uploadCsv').change(function () {
+            $(this).parse({
+              config: {
+                header: true,
+                complete: function (results, file) {
+                  generateCharts(results);
+                  toastr.info("Loaded CSV locally", "Local CSV loader");
+                }
+              },
+              error: function(err, file, inputElem, reason)
+              {
+                toastr.warning("Error loading CSV file", "Local CSV loader");
+              }
+            });
+          }).show();
+        }
+        else{
+          $('#uploadCsv').hide();
+        }
+
         socket.emit('client-hello');
     });
 
@@ -145,7 +190,9 @@
 
     socket.on('server-pair-data', function (data) {
       toastr.success('Received data from UBC PAIR.');
-      console.log(data);
+      generateCharts(Papa.parse(data.csv, {
+        header: true
+      }));
     });
 
    $('#generateEmailLink').click(function () {
@@ -154,6 +201,13 @@
         $('#genText').show();
 
    });
+
+    socket.on('disconnect', () => {
+      $('#leadBody').show();
+      $('#emailGeneratedBody').hide();
+
+      toastr.error('Connection lost.');
+    });
 </script>
 </body>
 </html>

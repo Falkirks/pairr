@@ -7,10 +7,22 @@ let bodyParser = require('body-parser');
 let request = require('request');
 
 let sharedState = {
-  serviceOnline: true
+  serviceOnline: true,
+  enableLocal: true
 };
 let emailToSock = {
 
+};
+
+const findEmailForSock = (sock) => {
+  for(const email in emailToSock) {
+    if (emailToSock.hasOwnProperty(email)) {
+      if(emailToSock[email] === sock){
+        return email;
+      }
+    }
+  }
+  return false;
 };
 
 server.listen(process.env.PORT || 3000);
@@ -35,9 +47,9 @@ app.post('/mailgun', function (req, res) {
 
       request({
         url: attachment[0].url,
-        'auth': {
-          'user': 'api',
-          'pass': process.env.MAILGUN_API_KEY
+        auth: {
+          user: 'api',
+          pass: process.env.MAILGUN_API_KEY
         }
       }, function (error, response, body) {
         console.log(body);
@@ -54,16 +66,23 @@ app.post('/mailgun', function (req, res) {
   res.end('OK');
 });
 
-io.on('connection', function (socket) {
+io.on('connection', (socket) => {
   socket.emit('server-hello', sharedState);
   socket.on('client-hello', function (data) {
     console.log("client connected");
   });
-  socket.on('client-req-email', function (data) {
-    // Just ignore collisions ;)
-    const email =  randomstring.generate() + "@pairr.falkirks.com";
+  socket.on('client-req-email', (data) => {
+    const email = findEmailForSock(socket) || randomstring.generate() + "@pairr.falkirks.com";
     emailToSock[email] = socket;
     socket.emit('server-gen-email', {email: email});
+  });
+
+  socket.on('disconnect', (reason) => {
+    const email = findEmailForSock(socket);
+    if(email !== false){
+      emailToSock[email] = undefined;
+    }
+    console.log("client disconnected");
   });
 });
 
