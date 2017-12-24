@@ -24,6 +24,11 @@
             font-size: 20px;
         }
 
+        #gotDataBody{
+            display: none;
+            padding-top: 50px;
+        }
+
 
         .loader,
         .loader:before,
@@ -123,20 +128,76 @@
 
 </div>
 
+<div id="gotDataBody">
+    <canvas id="histogram"></canvas>
+    <canvas id="passFail"></canvas>
+</div>
+
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/4.3.6/papaparse.min.js" integrity="sha256-5nI7WwoRuBEpzsi7i4B4FoxptQfKFKKQXWRiLkPaGzA=" crossorigin="anonymous"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js" integrity="sha256-c0m8xzX5oOBawsnLVpHnU2ieISOvxi584aNElFl2W6M=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js" integrity="sha256-ABVkpwb9K9PxubvRrHMkk6wmWcIHUE9eBxNZLXYQ84k=" crossorigin="anonymous"></script>
 <script src="/socket.io/socket.io.js"></script>
+<script src="/palette.js"></script>
 <script>
+
+    let csvData = null;
+
     let generateCharts = function (csv) {
-        console.log(csv);
+      console.log(csv);
+      $('#gotDataBody').show();
+      $('#emailGeneratedBody').hide();
+      $('#leadBody').hide();
+
+      csvData = csv.data;
+
+      let allDatasets = [];
+
+      let gradesAvailable = csvData.filter(classData => classData.Pass > 0 || classData.Fail > 0);
+
+      let keys = Object.keys(gradesAvailable[0]).filter(key => !isNaN(key.charAt(0)));
+
+      let colors = palette('rainbow', gradesAvailable.length).map(function(hex) {
+        return '#' + hex;
+      });
+
+      for(let currentPage = 0; currentPage < gradesAvailable.length; currentPage++){
+        allDatasets.push({
+          label: gradesAvailable[currentPage].Subject + gradesAvailable[currentPage].Course + " " + gradesAvailable[currentPage].Section,
+          data: keys.map(key => gradesAvailable[currentPage][key]),
+          backgroundColor: colors[currentPage]
+        });
+      }
+
+
+      let ctx = document.getElementById('histogram').getContext('2d');
+
+
+      let histogramChart = new Chart(ctx, {
+        // The type of chart we want to create
+        type: 'bar',
+
+        // The data for our dataset
+        data: {
+          labels: keys,
+          datasets: allDatasets
+        },
+
+        // Configuration options go here
+        options: {}
+      });
     };
+
+
     $('#genText').hide();
+
     let sharedState = {};
     let socket = io.connect(location.protocol+'//'+location.hostname+(location.port ? ':'+location.port: ''));
     socket.on('server-hello', function (data) {
         $('#leadBody').show();
         $('#emailGeneratedBody').hide();
+        $('#gotDataBody').hide();
 
         sharedState = data;
 

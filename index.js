@@ -1,4 +1,5 @@
-let app = require('express')();
+let express = require('express');
+let app = express();
 let http = require('http');
 let server = http.Server(app);
 let io = require('socket.io')(server);
@@ -33,9 +34,7 @@ app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
   limit: '2mb'
 }));
 
-app.get('/', function (req, res) {
-  res.sendFile(__dirname + '/index.html');
-});
+app.use(express.static('public'));
 
 app.post('/mailgun', function (req, res) {
   console.dir(req.body);
