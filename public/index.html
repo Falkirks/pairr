@@ -266,6 +266,7 @@
     socket.on('disconnect', () => {
       $('#leadBody').show();
       $('#emailGeneratedBody').hide();
+      $('#gotDataBody').hide();
 
       toastr.error('Connection lost.');
     });
