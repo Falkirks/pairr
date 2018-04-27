@@ -143,8 +143,19 @@
 <script>
 
     let csvData = null;
+    let histogramChart = null;
 
-    let generateCharts = function (csv) {
+    let generateCharts = function (csv, deleteNow = false) {
+      if(histogramChart != null){
+        if(deleteNow){
+          histogramChart.destroy();
+        }
+        else{
+          toastr.warning('New data received! Click this box to import new data and discard current results.', {timeOut: 5000, onclick: function () { generateCharts(csv, true); }});
+          return;
+        }
+
+      }
       console.log(csv);
       $('#gotDataBody').show();
       $('#emailGeneratedBody').hide();
@@ -174,7 +185,7 @@
       let ctx = document.getElementById('histogram').getContext('2d');
 
 
-      let histogramChart = new Chart(ctx, {
+      histogramChart = new Chart(ctx, {
         // The type of chart we want to create
         type: 'bar',
 
