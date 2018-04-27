@@ -145,18 +145,7 @@
     let csvData = null;
     let histogramChart = null;
 
-    let generateCharts = function (csv, deleteNow = false) {
-      if(histogramChart != null){
-        if(deleteNow){
-          histogramChart.destroy();
-        }
-        else{
-          toastr.warning('New data received! Click this box to import new data and discard current results.', {timeOut: 5000, onclick: function () { generateCharts(csv, true); }});
-          return;
-        }
-
-      }
-      console.log(csv);
+    let generateCharts = function (csv) {
       $('#gotDataBody').show();
       $('#emailGeneratedBody').hide();
       $('#leadBody').hide();
@@ -262,9 +251,11 @@
 
     socket.on('server-pair-data', function (data) {
       toastr.success('Received data from UBC PAIR.');
-      generateCharts(Papa.parse(data.csv, {
-        header: true
-      }));
+      if(histogramChart == null || confirm("New data received from PAIR. Do you want to discard current results and replace them?")){
+        generateCharts(Papa.parse(data.csv, {
+          header: true
+        }));
+      }
     });
 
    $('#generateEmailLink').click(function () {
